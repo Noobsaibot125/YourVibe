@@ -1,0 +1,5 @@
+{
+  "name": "FlutterVibe Web",
+  "description": "A modern, high-performance local music player web application inspired by Material 3 design. Features local file playback, playlist management, and a sleek dark-mode UI.",
+  "requestFramePermissions": []
+}

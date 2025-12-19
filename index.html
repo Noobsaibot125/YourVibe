@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FlutterVibe Web</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: '#6750A4',
+              onPrimary: '#FFFFFF',
+              primaryContainer: '#EADDFF',
+              onPrimaryContainer: '#21005D',
+              secondary: '#625B71',
+              surface: '#1C1B1F',
+              onSurface: '#E6E1E5',
+              surfaceVariant: '#49454F',
+              outline: '#938F99',
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      body {
+        background-color: #1C1B1F;
+        color: #E6E1E5;
+        font-family: 'Roboto', sans-serif;
+        overflow: hidden; /* App-like feel */
+      }
+      /* Custom scrollbar for playlist */
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #1C1B1F; 
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #49454F; 
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #6750A4; 
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.1",
+    "react/": "https://esm.sh/react@^19.2.1/",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.1/"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body>
+    <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>
