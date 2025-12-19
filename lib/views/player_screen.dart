@@ -63,7 +63,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold),
                             ),
-                            // Bluetooth/Device Indicator (Mock for now, requires extra deps for real name)
+                            // Bluetooth/Device Indicator
                             Row(
                               children: [
                                 Icon(Icons.speaker,
@@ -199,7 +199,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
                                   ),
                                   child: Slider(
                                     value: viewModel.position.inMilliseconds
-                                        .toDouble(),
+                                        .toDouble()
+                                        .clamp(0.0, viewModel.duration.inMilliseconds.toDouble()),
                                     max: viewModel.duration.inMilliseconds
                                         .toDouble(),
                                     onChanged: (value) {
@@ -241,9 +242,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
                               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               children: [
                                 IconButton(
-                                  icon: const Icon(Icons.shuffle,
-                                      color: Colors.purple),
-                                  onPressed: () {},
+                                  icon: Icon(Icons.shuffle,
+                                      color: viewModel.isShuffle ? Colors.purple : Colors.grey),
+                                  onPressed: () => viewModel.toggleShuffle(),
                                 ),
                                 IconButton(
                                   icon: const Icon(Icons.skip_previous,
@@ -273,9 +274,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
                                   onPressed: () => viewModel.playNext(),
                                 ),
                                 IconButton(
-                                  icon: const Icon(Icons.repeat,
-                                      color: Colors.grey),
-                                  onPressed: () {},
+                                  icon: Icon(Icons.repeat,
+                                      color: viewModel.loopMode != LoopMode.off ? Colors.purple : Colors.grey),
+                                  onPressed: () => viewModel.toggleLoopMode(),
                                 ),
                               ],
                             ),
@@ -331,10 +332,13 @@ class _PlayerScreenState extends State<PlayerScreen> {
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     padding: const EdgeInsets.all(16),
-                                    child: viewModel.lyrics == "Loading..."
+                                    child: viewModel.isLoadingLyrics
                                         ? const Center(
-                                            child: CircularProgressIndicator(
-                                                color: Colors.purple))
+                                            child: SizedBox(
+                                                height: 20,
+                                                width: 20,
+                                                child: CircularProgressIndicator(
+                                                    color: Colors.purple, strokeWidth: 2)))
                                         : Text(
                                             viewModel.lyrics ??
                                                 "No lyrics available",
@@ -344,7 +348,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                                               height: 1.5,
                                             ),
                                             maxLines:
-                                                5, // Limit to 5 lines/paragraphs
+                                                5,
                                             overflow: TextOverflow.ellipsis,
                                           ),
                                   ),
@@ -398,21 +402,14 @@ class _PlayerScreenState extends State<PlayerScreen> {
                                           child: ClipRRect(
                                             borderRadius:
                                                 BorderRadius.circular(8),
-                                            child: QueryArtworkWidget(
-                                              id: song.artistId ??
-                                                  0, // Tentative d'utiliser artistId, sinon 0
-                                              type: ArtworkType.ARTIST,
-                                              nullArtworkWidget: Container(
-                                                  color: Colors.grey,
-                                                  child: const Icon(
-                                                      Icons.person,
-                                                      color: Colors.white)),
-                                            ),
+                                            child: _buildArtistImage(viewModel, song.artistId),
                                           ),
                                         ),
                                         const SizedBox(width: 12),
                                         Expanded(
-                                          child: Text(
+                                          child: viewModel.isLoadingArtist
+                                            ? const Text("Chargement...", style: TextStyle(color: Colors.grey))
+                                            : Text(
                                             viewModel.artistInfo?.biography ??
                                                 "Pas d'informations disponibles pour le moment.",
                                             style: const TextStyle(
@@ -442,6 +439,29 @@ class _PlayerScreenState extends State<PlayerScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildArtistImage(PlayerViewModel viewModel, int? artistId) {
+    if (viewModel.artistInfo?.thumbUrl != null) {
+      return Image.network(
+        viewModel.artistInfo!.thumbUrl!,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _buildLocalArtistImage(artistId),
+      );
+    }
+    return _buildLocalArtistImage(artistId);
+  }
+
+  Widget _buildLocalArtistImage(int? artistId) {
+      return QueryArtworkWidget(
+        id: artistId ?? 0,
+        type: ArtworkType.ARTIST,
+        nullArtworkWidget: Container(
+            color: Colors.grey,
+            child: const Icon(
+                Icons.person,
+                color: Colors.white)),
+      );
   }
 
   String _formatDuration(Duration duration) {

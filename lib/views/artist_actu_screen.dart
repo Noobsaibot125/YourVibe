@@ -24,11 +24,30 @@ class ArtistActuScreen extends StatelessWidget {
       ),
       body: Consumer<PlayerViewModel>(
         builder: (context, viewModel, child) {
+
+          if (viewModel.isLoadingArtist) {
+             return const Center(
+                child: CircularProgressIndicator(color: Colors.purple));
+          }
+
           final info = viewModel.artistInfo;
 
           if (info == null) {
-            return const Center(
-                child: CircularProgressIndicator(color: Colors.purple));
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.info_outline, color: Colors.grey, size: 60),
+                  const SizedBox(height: 16),
+                  const Text("Informations non disponibles",
+                      style: TextStyle(color: Colors.white)),
+                  const SizedBox(height: 8),
+                  TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text("Retour"))
+                ],
+              ),
+            );
           }
 
           return SingleChildScrollView(
@@ -42,11 +61,30 @@ class ArtistActuScreen extends StatelessWidget {
                       margin: const EdgeInsets.only(bottom: 24),
                       height: 200,
                       width: double.infinity,
-                      decoration: BoxDecoration(
+                      child: ClipRRect(
                         borderRadius: BorderRadius.circular(16),
-                        image: DecorationImage(
-                          image: NetworkImage(info.thumbUrl!),
+                        child: Image.network(
+                          info.thumbUrl!,
                           fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              color: Colors.grey[900],
+                              child: const Icon(Icons.broken_image,
+                                  color: Colors.white54, size: 50),
+                            );
+                          },
+                          loadingBuilder: (context, child, loadingProgress) {
+                             if (loadingProgress == null) return child;
+                             return Center(
+                               child: CircularProgressIndicator(
+                                 value: loadingProgress.expectedTotalBytes != null
+                                     ? loadingProgress.cumulativeBytesLoaded /
+                                         loadingProgress.expectedTotalBytes!
+                                     : null,
+                                 color: Colors.purple,
+                               ),
+                             );
+                          },
                         ),
                       ),
                     ),
@@ -60,13 +98,6 @@ class ArtistActuScreen extends StatelessWidget {
                       color: Colors.grey, fontSize: 14, height: 1.5),
                 ),
                 const SizedBox(height: 32),
-
-                // Keeping generic News/Concerts as they are "features" of the app ui
-                // But for now, since we have no source, maybe just show them as "Trending" generic
-                // or just keep them for the "demo" aspect requested ("vivantes").
-                // User asked to make pages "vivantes". Real bio helps.
-                // I will keep the fake sections but maybe rename them to general music news if strict.
-                // But let's assume the user wants the UI structure.
 
                 _buildSectionTitle("Dernières News (Demo)"),
                 const SizedBox(height: 16),
@@ -217,10 +248,6 @@ class ArtistActuScreen extends StatelessWidget {
   }
 
   Widget _buildSocialsSection(BuildContext context, dynamic info) {
-    // info is ArtistInfo?
-    // Using dynamic to avoid import if not needed, but cleaner to assume info has fields
-    // fields: website, facebook, twitter
-
     return Column(
       children: [
         if (info.website != null && info.website!.isNotEmpty)

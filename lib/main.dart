@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'viewmodels/player_viewmodel.dart';
+import 'viewmodels/profile_viewmodel.dart';
 import 'views/main_navigation.dart';
 
 void main() async {
@@ -41,8 +42,11 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => PlayerViewModel(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => PlayerViewModel()),
+        ChangeNotifierProvider(create: (_) => ProfileViewModel()),
+      ],
       child: MaterialApp(
         title: 'FlutterVibe',
         debugShowCheckedModeBanner: false,

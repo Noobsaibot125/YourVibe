@@ -6,6 +6,12 @@ class StorageService {
   static const String _keyLastPosition = 'last_position';
   static const String _keyRecentlyPlayed = 'recently_played_ids';
   static const String _keyPlayCounts = 'play_counts';
+  static const String _keyLikedSongs = 'liked_songs_ids';
+  static const String _keyPlaylists = 'playlists_data';
+
+  // Profile Keys
+  static const String _keyProfileName = 'profile_name';
+  static const String _keyProfileBio = 'profile_bio';
 
   SharedPreferences? _prefs;
 
@@ -71,8 +77,6 @@ class StorageService {
   }
 
   // --- Liked Songs ---
-  static const String _keyLikedSongs = 'liked_songs_ids';
-
   Future<void> saveLikedSongs(List<String> songIds) async {
     await _prefs?.setStringList(_keyLikedSongs, songIds);
   }
@@ -82,9 +86,6 @@ class StorageService {
   }
 
   // --- Playlists ---
-  static const String _keyPlaylists =
-      'playlists_data'; // JSON: { "name": [id1, id2] }
-
   Future<void> savePlaylists(Map<String, List<String>> playlists) async {
     await _prefs?.setString(_keyPlaylists, json.encode(playlists));
   }
@@ -100,5 +101,39 @@ class StorageService {
     } catch (e) {
       return {};
     }
+  }
+
+  // --- Profile Data ---
+  Future<void> saveProfile(String name, String bio) async {
+    await _prefs?.setString(_keyProfileName, name);
+    await _prefs?.setString(_keyProfileBio, bio);
+  }
+
+  String getProfileName() {
+    return _prefs?.getString(_keyProfileName) ?? "User";
+  }
+
+  String getProfileBio() {
+    return _prefs?.getString(_keyProfileBio) ?? "No bio yet.";
+  }
+
+  // --- Cache: Artist Info ---
+  Future<void> saveArtistInfoCache(String artistName, String jsonString) async {
+    await _prefs?.setString('artist_$artistName', jsonString);
+  }
+
+  String? getArtistInfoCache(String artistName) {
+    return _prefs?.getString('artist_$artistName');
+  }
+
+  // --- Cache: Lyrics ---
+  Future<void> saveLyricsCache(String artist, String title, String lyrics) async {
+    final key = 'lyrics_${artist}_$title';
+    await _prefs?.setString(key, lyrics);
+  }
+
+  String? getLyricsCache(String artist, String title) {
+    final key = 'lyrics_${artist}_$title';
+    return _prefs?.getString(key);
   }
 }

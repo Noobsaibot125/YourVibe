@@ -60,12 +60,17 @@ class PlayerViewModel extends ChangeNotifier {
   // Lyrics
   String? _lyrics;
   String? get lyrics => _lyrics;
+  bool _isLoadingLyrics = false;
+  bool get isLoadingLyrics => _isLoadingLyrics;
 
   final LyricsService _lyricsService = LyricsService();
 
   // Artist Info
   ArtistInfo? _artistInfo;
   ArtistInfo? get artistInfo => _artistInfo;
+  bool _isLoadingArtist = false;
+  bool get isLoadingArtist => _isLoadingArtist;
+
   final ArtistService _artistService = ArtistService();
 
   // Storage & Persistence
@@ -218,16 +223,8 @@ class PlayerViewModel extends ChangeNotifier {
         _currentSong = song;
         _currentIndex = _songs.indexOf(song);
 
-        // Restore position (optional, maybe don't seek auto to avoid noise)
-        // final lastPos = _storage.getLastPosition();
-        // if (lastPos > 0) {
-        //   _position = Duration(milliseconds: lastPos);
-        // }
-
         // Load metadata but DON'T play
         await _audioManager.loadSong(song.uri ?? '');
-        // We pause immediately just in case load triggers buffer,
-        // though usually it waits for play()
 
         // Fetch info for UI
         _fetchLyrics(song);
@@ -288,12 +285,6 @@ class PlayerViewModel extends ChangeNotifier {
       _albums = await _audioManager.queryAlbums();
       _artists = await _audioManager.queryArtists();
 
-      // Simuler "Recently Played" avec quelques chansons aléatoires pour l'instant
-      // if (_songs.isNotEmpty) {
-      //   _recentlyPlayed = List.from(_songs)..shuffle();
-      //   _recentlyPlayed = _recentlyPlayed.take(5).toList();
-      // }
-
       debugPrint('${_songs.length} chansons chargées');
       debugPrint('${_albums.length} albums chargés');
       debugPrint('${_artists.length} artistes chargés');
@@ -313,7 +304,8 @@ class PlayerViewModel extends ChangeNotifier {
 
       _currentIndex = index;
       _currentSong = song;
-      _lyrics = "Loading..."; // Reset lyrics
+      _lyrics = null; // Reset lyrics
+      _artistInfo = null; // Reset artist info
       notifyListeners();
 
       // Fetch lyrics and artist info in background
@@ -336,7 +328,6 @@ class PlayerViewModel extends ChangeNotifier {
         _recentlyPlayed.remove(song);
         _recentlyPlayed.insert(0, song);
       }
-      // Re-generate recommendations occasionally? For now, do it on boot.
 
       // Charger et lire la chanson
       await _audioManager.loadSong(song.uri ?? '');
@@ -351,15 +342,23 @@ class PlayerViewModel extends ChangeNotifier {
   Future<void> _fetchLyrics(SongModel song) async {
     String artist = song.artist ?? "";
     if (artist == '<unknown>' || artist.isEmpty) {
-      // Try to parse from title if possible, or just fail gracefully
-      _lyrics = "Lyrics not available for unknown artist.";
+      _lyrics = "Lyrics not available.";
       notifyListeners();
       return;
     }
 
-    final fetchedLyrics = await _lyricsService.getLyrics(artist, song.title);
-    _lyrics = fetchedLyrics ?? "No lyrics found";
+    _isLoadingLyrics = true;
     notifyListeners();
+
+    try {
+      final fetchedLyrics = await _lyricsService.getLyrics(artist, song.title);
+      _lyrics = fetchedLyrics ?? "No lyrics found";
+    } catch (_) {
+      _lyrics = "Error loading lyrics";
+    } finally {
+      _isLoadingLyrics = false;
+      notifyListeners();
+    }
   }
 
   Future<void> _fetchArtistInfo(SongModel song) async {
@@ -370,8 +369,17 @@ class PlayerViewModel extends ChangeNotifier {
       return;
     }
 
-    _artistInfo = await _artistService.getArtistInfo(artist);
+    _isLoadingArtist = true;
     notifyListeners();
+
+    try {
+      _artistInfo = await _artistService.getArtistInfo(artist);
+    } catch (_) {
+       _artistInfo = null;
+    } finally {
+      _isLoadingArtist = false;
+      notifyListeners();
+    }
   }
 
   /// Lire une chanson par index
