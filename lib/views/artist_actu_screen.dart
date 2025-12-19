@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../viewmodels/player_viewmodel.dart';
 
 class ArtistActuScreen extends StatelessWidget {
@@ -24,9 +25,8 @@ class ArtistActuScreen extends StatelessWidget {
       ),
       body: Consumer<PlayerViewModel>(
         builder: (context, viewModel, child) {
-
           if (viewModel.isLoadingArtist) {
-             return const Center(
+            return const Center(
                 child: CircularProgressIndicator(color: Colors.purple));
           }
 
@@ -74,16 +74,17 @@ class ArtistActuScreen extends StatelessWidget {
                             );
                           },
                           loadingBuilder: (context, child, loadingProgress) {
-                             if (loadingProgress == null) return child;
-                             return Center(
-                               child: CircularProgressIndicator(
-                                 value: loadingProgress.expectedTotalBytes != null
-                                     ? loadingProgress.cumulativeBytesLoaded /
-                                         loadingProgress.expectedTotalBytes!
-                                     : null,
-                                 color: Colors.purple,
-                               ),
-                             );
+                            if (loadingProgress == null) return child;
+                            return Center(
+                              child: CircularProgressIndicator(
+                                value: loadingProgress.expectedTotalBytes !=
+                                        null
+                                    ? loadingProgress.cumulativeBytesLoaded /
+                                        loadingProgress.expectedTotalBytes!
+                                    : null,
+                                color: Colors.purple,
+                              ),
+                            );
                           },
                         ),
                       ),
@@ -99,14 +100,15 @@ class ArtistActuScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 32),
 
-                _buildSectionTitle("Dernières News (Demo)"),
+                _buildSectionTitle("Dernières News"),
                 const SizedBox(height: 16),
-                _buildNewsSection(context),
+                _buildNewsSection(context, artistName),
                 const SizedBox(height: 32),
 
-                _buildSectionTitle("Concerts & Événements (Demo)"),
+                // Discography Section - Real data
+                _buildSectionTitle("Discographie"),
                 const SizedBox(height: 16),
-                _buildConcertsSection(context),
+                _buildDiscographySection(context, viewModel, artistName),
                 const SizedBox(height: 32),
 
                 _buildSectionTitle("Réseaux Sociaux"),
@@ -132,7 +134,7 @@ class ArtistActuScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildNewsSection(BuildContext context) {
+  Widget _buildNewsSection(BuildContext context, String artistName) {
     return SizedBox(
       height: 200,
       child: ListView(
@@ -142,7 +144,8 @@ class ArtistActuScreen extends StatelessWidget {
               context,
               "$artistName annonce une nouvelle tournée mondiale",
               Colors.blueGrey),
-          _buildNewsCard(context, "Nouvel album en préparation", Colors.brown),
+          _buildNewsCard(context, "Nouvel album de $artistName en préparation",
+              Colors.brown),
           _buildNewsCard(context, "Interview exclusive : Les secrets du succès",
               Colors.indigo),
         ],
@@ -175,125 +178,193 @@ class ArtistActuScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildConcertsSection(BuildContext context) {
-    return Column(
-      children: [
-        _buildConcertItem(
-            "Lot", "20", "déc", artistName, "Line Delue • Ortrania"),
-        const SizedBox(height: 12),
-        _buildConcertItem("Let", "23", "NOV", artistName, "North Arena • USA"),
-      ],
-    );
-  }
-
-  Widget _buildConcertItem(
-      String day, String date, String month, String artist, String location) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.grey[900],
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Column(
-              children: [
-                Text(day,
-                    style: const TextStyle(color: Colors.purple, fontSize: 12)),
-                Text(date,
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold)),
-                Text(month,
-                    style: const TextStyle(color: Colors.grey, fontSize: 12)),
-              ],
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(artist,
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16)),
-                Text(location,
-                    style: const TextStyle(color: Colors.grey, fontSize: 13)),
-              ],
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {},
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.purpleAccent,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20)),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-            ),
-            child: const Text("Tickets"),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildSocialsSection(BuildContext context, dynamic info) {
     return Column(
       children: [
         if (info.website != null && info.website!.isNotEmpty)
-          _buildSocialItem(Icons.language, "Website", info.website!),
+          _buildSocialItem(Icons.language, "Site Web", info.website!),
         const SizedBox(height: 12),
         if (info.facebook != null && info.facebook!.isNotEmpty)
           _buildSocialItem(Icons.facebook, "Facebook", info.facebook!),
         const SizedBox(height: 12),
         if (info.twitter != null && info.twitter!.isNotEmpty)
           _buildSocialItem(Icons.close, "X (Twitter)", info.twitter!),
+        const SizedBox(height: 12),
+        if (info.instagram != null && info.instagram!.isNotEmpty)
+          _buildSocialItem(Icons.camera_alt, "Instagram", info.instagram!),
       ],
     );
   }
 
   Widget _buildSocialItem(IconData icon, String title, String content) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          CircleAvatar(
-            backgroundColor: Colors.grey[800],
-            child: Icon(icon, color: Colors.white),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title,
-                    style: const TextStyle(
-                        color: Colors.blue, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 4),
-                Text(content,
-                    style: const TextStyle(
-                        color: Colors.grey,
-                        fontSize: 13,
-                        decoration: TextDecoration.underline)),
-              ],
+    return GestureDetector(
+      onTap: () => _launchUrl(content),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CircleAvatar(
+              backgroundColor: Colors.grey[800],
+              child: Icon(icon, color: Colors.white),
             ),
-          ),
-        ],
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style: const TextStyle(
+                          color: Colors.blue, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(content,
+                            style: const TextStyle(
+                                color: Colors.purple,
+                                fontSize: 13,
+                                decoration: TextDecoration.underline)),
+                      ),
+                      const Icon(Icons.open_in_new,
+                          color: Colors.purple, size: 16),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _launchUrl(String url) async {
+    String finalUrl = url;
+    if (!url.startsWith('http')) {
+      finalUrl = 'https://$url';
+    }
+    final uri = Uri.parse(finalUrl);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  void _openSpotifySearch(String artistName, String albumTitle) async {
+    final query = Uri.encodeComponent('$artistName $albumTitle');
+    final spotifyUrl = 'https://open.spotify.com/search/$query';
+    final uri = Uri.parse(spotifyUrl);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  Widget _buildDiscographySection(
+      BuildContext context, PlayerViewModel viewModel, String artistName) {
+    if (viewModel.isLoadingAlbums) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(20),
+          child: CircularProgressIndicator(color: Colors.purple),
+        ),
+      );
+    }
+
+    final albums = viewModel.artistAlbums;
+
+    if (albums.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Text(
+          "Aucun album trouvé pour cet artiste.",
+          style: TextStyle(color: Colors.grey),
+        ),
+      );
+    }
+
+    return SizedBox(
+      height: 180,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: albums.length,
+        itemBuilder: (context, index) {
+          final album = albums[index];
+          return GestureDetector(
+            onTap: () => _openSpotifySearch(artistName, album.title),
+            child: Container(
+              width: 140,
+              margin: const EdgeInsets.only(right: 12),
+              decoration: BoxDecoration(
+                color: Colors.grey[900],
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Album artwork
+                  Container(
+                    height: 120,
+                    decoration: BoxDecoration(
+                      color: Colors.purple.withOpacity(0.3),
+                      borderRadius:
+                          const BorderRadius.vertical(top: Radius.circular(12)),
+                    ),
+                    child: album.thumbUrl != null
+                        ? ClipRRect(
+                            borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(12)),
+                            child: Image.network(
+                              album.thumbUrl!,
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              errorBuilder: (_, __, ___) => const Center(
+                                child: Icon(Icons.album,
+                                    color: Colors.white54, size: 40),
+                              ),
+                            ),
+                          )
+                        : const Center(
+                            child: Icon(Icons.album,
+                                color: Colors.white54, size: 40),
+                          ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          album.title,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (album.year != null)
+                          Text(
+                            album.year!,
+                            style: const TextStyle(
+                                color: Colors.grey, fontSize: 11),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:on_audio_query/on_audio_query.dart';
 import '../viewmodels/player_viewmodel.dart';
+import 'artist_detail_screen.dart';
+import 'album_detail_screen.dart';
 import 'profile_screen.dart';
 import 'search_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -250,15 +252,16 @@ class HomeScreen extends StatelessWidget {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                             // Try to show artist artwork if possible, else Icon
-                             Expanded(
-                               child: QueryArtworkWidget(
-                                  id: song.id,
-                                  type: ArtworkType.AUDIO, // Use song art as proxy for "Style"
-                                  nullArtworkWidget: const Icon(Icons.podcasts,
+                            // Try to show artist artwork if possible, else Icon
+                            Expanded(
+                              child: QueryArtworkWidget(
+                                id: song.id,
+                                type: ArtworkType
+                                    .AUDIO, // Use song art as proxy for "Style"
+                                nullArtworkWidget: const Icon(Icons.podcasts,
                                     color: Colors.white, size: 40),
-                               ),
-                             ),
+                              ),
+                            ),
                             const SizedBox(height: 8),
                             Text(
                               "Mix $artist",
@@ -298,7 +301,7 @@ class HomeScreen extends StatelessWidget {
   Widget _buildSelectionJourList(BuildContext context) {
     return Consumer<PlayerViewModel>(builder: (context, viewModel, child) {
       final randomSongs =
-          (viewModel.songs.toList()..shuffle()).take(3).toList();
+          (viewModel.songs.toList()..shuffle()).take(15).toList();
       return _buildHorizontalSongList(context, randomSongs);
     });
   }
@@ -389,51 +392,61 @@ class HomeScreen extends StatelessWidget {
             separatorBuilder: (context, index) => const SizedBox(width: 12),
             itemBuilder: (context, index) {
               final album = viewModel.albums[index];
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 120,
-                    height: 120,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      color: Colors.grey[800],
+              return GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => AlbumDetailScreen(album: album),
                     ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: QueryArtworkWidget(
-                        id: album.id,
-                        type: ArtworkType.ALBUM,
-                        nullArtworkWidget: const Icon(Icons.album,
-                            size: 50, color: Colors.white54),
+                  );
+                },
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 120,
+                      height: 120,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        color: Colors.grey[800],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: QueryArtworkWidget(
+                          id: album.id,
+                          type: ArtworkType.ALBUM,
+                          nullArtworkWidget: const Icon(Icons.album,
+                              size: 50, color: Colors.white54),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    width: 120,
-                    child: Text(
-                      album.album,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: 120,
+                      child: Text(
+                        album.album,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
-                  ),
-                  SizedBox(
-                    width: 120,
-                    child: Text(
-                      "${album.numOfSongs} chansons",
-                      style: TextStyle(
-                        color: Colors.grey[400],
-                        fontSize: 12,
+                    SizedBox(
+                      width: 120,
+                      child: Text(
+                        "${album.numOfSongs} chansons",
+                        style: TextStyle(
+                          color: Colors.grey[400],
+                          fontSize: 12,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               );
             },
           ),
@@ -462,40 +475,50 @@ class HomeScreen extends StatelessWidget {
             separatorBuilder: (context, index) => const SizedBox(width: 16),
             itemBuilder: (context, index) {
               final artist = viewModel.artists[index];
-              return Column(
-                children: [
-                  Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.grey[800],
+              return GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ArtistDetailScreen(artist: artist),
                     ),
-                    child: ClipOval(
-                      child: QueryArtworkWidget(
-                        id: artist.id,
-                        type: ArtworkType.ARTIST,
-                        nullArtworkWidget: const Icon(Icons.person,
-                            size: 50, color: Colors.white54),
+                  );
+                },
+                child: Column(
+                  children: [
+                    Container(
+                      width: 100,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.grey[800],
+                      ),
+                      child: ClipOval(
+                        child: QueryArtworkWidget(
+                          id: artist.id,
+                          type: ArtworkType.ARTIST,
+                          nullArtworkWidget: const Icon(Icons.person,
+                              size: 50, color: Colors.white54),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    width: 100,
-                    child: Text(
-                      artist.artist,
-                      maxLines: 1,
-                      textAlign: TextAlign.center,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: 100,
+                      child: Text(
+                        artist.artist,
+                        maxLines: 1,
+                        textAlign: TextAlign.center,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               );
             },
           ),

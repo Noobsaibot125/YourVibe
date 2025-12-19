@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
@@ -25,6 +26,20 @@ class AudioManager {
   Stream<bool> get shuffleModeEnabledStream =>
       _audioPlayer.shuffleModeEnabledStream;
 
+  // Session Audio / Appareils
+  Stream<AudioSession> get sessionStream => AudioSession.instance.asStream();
+
+  // Track current device name and type for UI
+  final _deviceInfoController =
+      StreamController<Map<String, dynamic>>.broadcast();
+  Map<String, dynamic> _currentDeviceInfo = {
+    'name': 'Haut-parleur',
+    'icon': 'speaker',
+  };
+  Stream<Map<String, dynamic>> get deviceInfoStream =>
+      _deviceInfoController.stream;
+  Map<String, dynamic> get currentDeviceInfo => _currentDeviceInfo;
+
   /// Initialiser l'AudioManager
   Future<void> initialize() async {
     try {
@@ -32,30 +47,46 @@ class AudioManager {
       final session = await AudioSession.instance;
       await session.configure(const AudioSessionConfiguration.music());
 
-      // Explicitly activate session
-      if (await session.setActive(true)) {
-        debugPrint('✅ Audio Session Activated');
-      } else {
-        debugPrint('⚠️ Audio Session Activation Failed');
-      }
+      // Signal initial
+      _updateDeviceInfo(session);
 
-      // Force volume reset
-      await _audioPlayer.setVolume(1.0);
-      await _audioPlayer.setLoopMode(LoopMode.off);
-
-      // Gestion de la fin de lecture
-      _audioPlayer.playerStateStream.listen((state) {
-        if (state.processingState == ProcessingState.completed) {
-          // Auto-play next handled by viewModel usually
+      // Listen to changes
+      session.interruptionEventStream.listen((event) {
+        if (event.begin) {
+          _audioPlayer.pause();
         }
       });
+
+      session.becomingNoisyEventStream.listen((_) {
+        _audioPlayer.pause();
+      });
+
+      // Simple polling or specific event if available for device changes
+      // In audio_session, we can check route changes
+      // Note: Implementation might vary by OS, but this is a good baseline
     } catch (e) {
       print('Erreur lors de l\'initialisation de l\'AudioManager: $e');
     }
   }
 
+  void _updateDeviceInfo(AudioSession session) {
+    // Escouter les changements de configuration (Route)
+    session.configurationStream.listen((config) async {
+      String name = 'Haut-parleur';
+      String icon = 'speaker';
+
+      // Pour une implémentation simple mais réactive
+      _currentDeviceInfo = {'name': name, 'icon': icon};
+      _deviceInfoController.add(_currentDeviceInfo);
+    });
+
+    // Émettre l'état initial
+    _deviceInfoController.add(_currentDeviceInfo);
+  }
+
   /// Charger une chanson depuis son URI
-  Future<void> loadSong(String uri, {required String title, required String artist, String? artUri}) async {
+  Future<void> loadSong(String uri,
+      {required String title, required String artist, String? artUri}) async {
     try {
       debugPrint('🎵 Loading song from URI: $uri');
 
@@ -79,7 +110,7 @@ class AudioManager {
             // Specify a unique ID for each media item:
             id: uri,
             // Metadata to display in the notification:
-            album: "FlutterVibe Music",
+            album: "YourVibe Music",
             title: title,
             artist: artist,
             artUri: artUri != null ? Uri.parse(artUri) : null,

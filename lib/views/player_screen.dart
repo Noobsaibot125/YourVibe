@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:on_audio_query/on_audio_query.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../viewmodels/player_viewmodel.dart';
+import '../services/lyrics_service.dart';
 import 'artist_actu_screen.dart';
 import 'package:just_audio/just_audio.dart';
 import 'full_lyrics_screen.dart';
-import 'package:just_audio/just_audio.dart'; // <--- AJOUTE CECI
 
 class PlayerScreen extends StatefulWidget {
   const PlayerScreen({super.key});
@@ -68,13 +69,22 @@ class _PlayerScreenState extends State<PlayerScreen> {
                             // Bluetooth/Device Indicator
                             Row(
                               children: [
-                                Icon(Icons.speaker,
-                                    size: 12, color: Colors.purple[200]),
+                                Icon(
+                                  viewModel.deviceInfo['icon'] == 'speaker'
+                                      ? Icons.speaker
+                                      : viewModel.deviceInfo['icon'] ==
+                                              'bluetooth'
+                                          ? Icons.bluetooth
+                                          : Icons.headset,
+                                  size: 12,
+                                  color: Colors.purple[200],
+                                ),
                                 const SizedBox(width: 4),
-                                Text("Haut-parleur",
-                                    style: TextStyle(
-                                        color: Colors.purple[200],
-                                        fontSize: 10)),
+                                Text(
+                                  viewModel.deviceInfo['name'],
+                                  style: TextStyle(
+                                      color: Colors.purple[200], fontSize: 10),
+                                ),
                               ],
                             )
                           ],
@@ -143,9 +153,11 @@ class _PlayerScreenState extends State<PlayerScreen> {
                                       // Trigger search options
                                       showModalBottomSheet(
                                         context: context,
-                                        backgroundColor: const Color(0xFF2A2A2A),
+                                        backgroundColor:
+                                            const Color(0xFF2A2A2A),
                                         shape: const RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                                          borderRadius: BorderRadius.vertical(
+                                              top: Radius.circular(20)),
                                         ),
                                         builder: (context) => Container(
                                           padding: const EdgeInsets.all(16),
@@ -153,27 +165,41 @@ class _PlayerScreenState extends State<PlayerScreen> {
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
                                               ListTile(
-                                                leading: const Icon(Icons.search, color: Colors.white),
-                                                title: const Text("Rechercher les paroles sur le web", style: TextStyle(color: Colors.white)),
+                                                leading: const Icon(
+                                                    Icons.search,
+                                                    color: Colors.white),
+                                                title: const Text(
+                                                    "Rechercher les paroles sur le web",
+                                                    style: TextStyle(
+                                                        color: Colors.white)),
                                                 onTap: () {
                                                   Navigator.pop(context);
                                                   // Trigger manual lyrics fetch or web search
-                                                   Navigator.push(
+                                                  Navigator.push(
                                                     context,
-                                                    MaterialPageRoute(builder: (context) => const FullLyricsScreen()),
+                                                    MaterialPageRoute(
+                                                        builder: (context) =>
+                                                            const FullLyricsScreen()),
                                                   );
                                                 },
                                               ),
                                               ListTile(
-                                                leading: const Icon(Icons.info, color: Colors.white),
-                                                title: const Text("Rechercher infos artiste", style: TextStyle(color: Colors.white)),
+                                                leading: const Icon(Icons.info,
+                                                    color: Colors.white),
+                                                title: const Text(
+                                                    "Rechercher infos artiste",
+                                                    style: TextStyle(
+                                                        color: Colors.white)),
                                                 onTap: () {
                                                   Navigator.pop(context);
                                                   Navigator.push(
                                                     context,
                                                     MaterialPageRoute(
-                                                      builder: (context) => ArtistActuScreen(
-                                                        artistName: song.artist ?? "Artiste",
+                                                      builder: (context) =>
+                                                          ArtistActuScreen(
+                                                        artistName:
+                                                            song.artist ??
+                                                                "Artiste",
                                                       ),
                                                     ),
                                                   );
@@ -207,14 +233,6 @@ class _PlayerScreenState extends State<PlayerScreen> {
                                           ),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
-                                        ),
-                                        const SizedBox(height: 4),
-                                        const Text(
-                                          "Tap for options",
-                                          style: TextStyle(
-                                            color: Colors.purple,
-                                            fontSize: 10,
-                                          ),
                                         ),
                                       ],
                                     ),
@@ -257,7 +275,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
                                   child: Slider(
                                     value: viewModel.position.inMilliseconds
                                         .toDouble()
-                                        .clamp(0.0, viewModel.duration.inMilliseconds.toDouble()),
+                                        .clamp(
+                                            0.0,
+                                            viewModel.duration.inMilliseconds
+                                                .toDouble()),
                                     max: viewModel.duration.inMilliseconds
                                         .toDouble(),
                                     onChanged: (value) {
@@ -300,7 +321,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
                               children: [
                                 IconButton(
                                   icon: Icon(Icons.shuffle,
-                                      color: viewModel.isShuffle ? Colors.purple : Colors.grey),
+                                      color: viewModel.isShuffle
+                                          ? Colors.purple
+                                          : Colors.grey),
                                   onPressed: () => viewModel.toggleShuffle(),
                                 ),
                                 IconButton(
@@ -332,7 +355,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
                                 ),
                                 IconButton(
                                   icon: Icon(Icons.repeat,
-                                      color: viewModel.loopMode != LoopMode.off ? Colors.purple : Colors.grey),
+                                      color: viewModel.loopMode != LoopMode.off
+                                          ? Colors.purple
+                                          : Colors.grey),
                                   onPressed: () => viewModel.toggleLoopMode(),
                                 ),
                               ],
@@ -394,20 +419,11 @@ class _PlayerScreenState extends State<PlayerScreen> {
                                             child: SizedBox(
                                                 height: 20,
                                                 width: 20,
-                                                child: CircularProgressIndicator(
-                                                    color: Colors.purple, strokeWidth: 2)))
-                                        : Text(
-                                            viewModel.lyrics ??
-                                                "No lyrics available",
-                                            style: const TextStyle(
-                                              color: Colors.grey,
-                                              fontSize: 16,
-                                              height: 1.5,
-                                            ),
-                                            maxLines:
-                                                5,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
+                                                child:
+                                                    CircularProgressIndicator(
+                                                        color: Colors.purple,
+                                                        strokeWidth: 2)))
+                                        : _buildLyricsContent(viewModel, song),
                                   ),
                                 ),
                               ],
@@ -459,22 +475,27 @@ class _PlayerScreenState extends State<PlayerScreen> {
                                           child: ClipRRect(
                                             borderRadius:
                                                 BorderRadius.circular(8),
-                                            child: _buildArtistImage(viewModel, song.artistId),
+                                            child: _buildArtistImage(
+                                                viewModel, song.artistId),
                                           ),
                                         ),
                                         const SizedBox(width: 12),
                                         Expanded(
                                           child: viewModel.isLoadingArtist
-                                            ? const Text("Chargement...", style: TextStyle(color: Colors.grey))
-                                            : Text(
-                                            viewModel.artistInfo?.biography ??
-                                                "Pas d'informations disponibles pour le moment.",
-                                            style: const TextStyle(
-                                                color: Colors.grey,
-                                                fontSize: 13),
-                                            maxLines: 3,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
+                                              ? const Text("Chargement...",
+                                                  style: TextStyle(
+                                                      color: Colors.grey))
+                                              : Text(
+                                                  viewModel.artistInfo
+                                                          ?.biography ??
+                                                      "Pas d'informations disponibles pour le moment.",
+                                                  style: const TextStyle(
+                                                      color: Colors.grey,
+                                                      fontSize: 13),
+                                                  maxLines: 3,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
                                         ),
                                       ],
                                     ),
@@ -510,15 +531,13 @@ class _PlayerScreenState extends State<PlayerScreen> {
   }
 
   Widget _buildLocalArtistImage(int? artistId) {
-      return QueryArtworkWidget(
-        id: artistId ?? 0,
-        type: ArtworkType.ARTIST,
-        nullArtworkWidget: Container(
-            color: Colors.grey,
-            child: const Icon(
-                Icons.person,
-                color: Colors.white)),
-      );
+    return QueryArtworkWidget(
+      id: artistId ?? 0,
+      type: ArtworkType.ARTIST,
+      nullArtworkWidget: Container(
+          color: Colors.grey,
+          child: const Icon(Icons.person, color: Colors.white)),
+    );
   }
 
   String _formatDuration(Duration duration) {
@@ -526,5 +545,95 @@ class _PlayerScreenState extends State<PlayerScreen> {
     final minutes = twoDigits(duration.inMinutes.remainder(60));
     final seconds = twoDigits(duration.inSeconds.remainder(60));
     return '$minutes:$seconds';
+  }
+
+  Widget _buildLyricsContent(PlayerViewModel viewModel, SongModel song) {
+    if (viewModel.syncedLyrics.isNotEmpty) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ...viewModel.syncedLyrics.take(5).map((line) {
+            final isCurrent = viewModel.syncedLyrics.indexOf(line) ==
+                viewModel.currentLyricsIndex;
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2),
+              child: Text(
+                line.text,
+                style: TextStyle(
+                  color: isCurrent ? Colors.white : Colors.white30,
+                  fontSize: 16,
+                  fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            );
+          }),
+          if (viewModel.syncedLyrics.length > 5)
+            const Text("...", style: TextStyle(color: Colors.white24)),
+        ],
+      );
+    }
+
+    final lyrics = viewModel.lyrics;
+    final isError = lyrics == null ||
+        lyrics == "No lyrics found" ||
+        lyrics == "Error loading lyrics" ||
+        lyrics.contains("Error");
+
+    if (isError) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            lyrics ?? "Paroles non disponibles",
+            style: const TextStyle(color: Colors.grey, fontSize: 16),
+          ),
+          const SizedBox(height: 12),
+          GestureDetector(
+            onTap: () => _searchLyricsOnWeb(song.artist ?? "", song.title),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.purple.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.purple.withOpacity(0.5)),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.search, color: Colors.purple, size: 18),
+                  SizedBox(width: 8),
+                  Text(
+                    "Rechercher sur le web",
+                    style: TextStyle(color: Colors.purple, fontSize: 14),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Text(
+      lyrics,
+      style: const TextStyle(
+        color: Colors.grey,
+        fontSize: 16,
+        height: 1.5,
+      ),
+      maxLines: 5,
+      overflow: TextOverflow.ellipsis,
+    );
+  }
+
+  Future<void> _searchLyricsOnWeb(String artist, String title) async {
+    final lyricsService = LyricsService();
+    final url = lyricsService.getLyricsSearchUrl(artist, title);
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
   }
 }

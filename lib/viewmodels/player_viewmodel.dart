@@ -60,8 +60,20 @@ class PlayerViewModel extends ChangeNotifier {
   // Lyrics
   String? _lyrics;
   String? get lyrics => _lyrics;
+  List<LyricsLine> _syncedLyrics = []; // NEW
+  List<LyricsLine> get syncedLyrics => _syncedLyrics; // NEW
+  int _currentLyricsIndex = -1; // NEW
+  int get currentLyricsIndex => _currentLyricsIndex; // NEW
+
   bool _isLoadingLyrics = false;
   bool get isLoadingLyrics => _isLoadingLyrics;
+
+  // Device Info
+  Map<String, dynamic> _deviceInfo = {
+    'name': 'Haut-parleur',
+    'icon': 'speaker',
+  };
+  Map<String, dynamic> get deviceInfo => _deviceInfo;
 
   final LyricsService _lyricsService = LyricsService();
 
@@ -70,6 +82,12 @@ class PlayerViewModel extends ChangeNotifier {
   ArtistInfo? get artistInfo => _artistInfo;
   bool _isLoadingArtist = false;
   bool get isLoadingArtist => _isLoadingArtist;
+
+  // Artist Albums (discography)
+  List<AlbumInfo> _artistAlbums = [];
+  List<AlbumInfo> get artistAlbums => _artistAlbums;
+  bool _isLoadingAlbums = false;
+  bool get isLoadingAlbums => _isLoadingAlbums;
 
   final ArtistService _artistService = ArtistService();
 
@@ -109,6 +127,7 @@ class PlayerViewModel extends ChangeNotifier {
 
     _audioManager.positionStream.listen((position) {
       _position = position ?? Duration.zero;
+      _updateLyricsIndex(); // NEW
       notifyListeners();
     });
 
@@ -122,8 +141,19 @@ class PlayerViewModel extends ChangeNotifier {
       notifyListeners();
     });
 
+    _audioManager.loopModeStream.listen((mode) {
+      _loopMode = mode;
+      notifyListeners();
+    });
+
     _audioManager.shuffleModeEnabledStream.listen((enabled) {
       _isShuffle = enabled;
+      notifyListeners();
+    });
+
+    // Écouter les changements d'appareils
+    _audioManager.deviceInfoStream.listen((info) {
+      _deviceInfo = info;
       notifyListeners();
     });
 
@@ -338,7 +368,8 @@ class PlayerViewModel extends ChangeNotifier {
         song.uri ?? '',
         title: song.title,
         artist: song.artist ?? "Unknown",
-        artUri: _artistInfo?.thumbUrl, // Try to pass remote art if available, though local art is tricky for notification
+        artUri: _artistInfo
+            ?.thumbUrl, // Try to pass remote art if available, though local art is tricky for notification
       );
       await _audioManager.play();
 
@@ -352,16 +383,26 @@ class PlayerViewModel extends ChangeNotifier {
     String artist = song.artist ?? "";
     if (artist == '<unknown>' || artist.isEmpty) {
       _lyrics = "Lyrics not available.";
+      _syncedLyrics = [];
+      _currentLyricsIndex = -1;
       notifyListeners();
       return;
     }
 
     _isLoadingLyrics = true;
+    _syncedLyrics = [];
+    _currentLyricsIndex = -1;
     notifyListeners();
 
     try {
-      final fetchedLyrics = await _lyricsService.getLyrics(artist, song.title);
-      _lyrics = fetchedLyrics ?? "No lyrics found";
+      final data = await _lyricsService.getLyrics(artist, song.title);
+      if (data != null) {
+        _lyrics = data.plainLyrics;
+        _syncedLyrics = data.lines;
+        _currentLyricsIndex = -1;
+      } else {
+        _lyrics = "No lyrics found";
+      }
     } catch (_) {
       _lyrics = "Error loading lyrics";
     } finally {
@@ -374,19 +415,73 @@ class PlayerViewModel extends ChangeNotifier {
     String artist = song.artist ?? "";
     if (artist == '<unknown>' || artist.isEmpty) {
       _artistInfo = null;
+      _artistAlbums = [];
       notifyListeners();
       return;
     }
 
     _isLoadingArtist = true;
+    _isLoadingAlbums = true;
     notifyListeners();
 
     try {
-      _artistInfo = await _artistService.getArtistInfo(artist);
+      // Fetch artist info and albums in parallel
+      final results = await Future.wait([
+        _artistService.getArtistInfo(artist),
+        _artistService.getArtistAlbums(artist),
+      ]);
+
+      _artistInfo = results[0] as ArtistInfo?;
+      _artistAlbums = results[1] as List<AlbumInfo>;
     } catch (_) {
-       _artistInfo = null;
+      _artistInfo = null;
+      _artistAlbums = [];
     } finally {
       _isLoadingArtist = false;
+      _isLoadingAlbums = false;
+      notifyListeners();
+    }
+  }
+
+  /// Manually fetch artist albums (for on-demand loading)
+  Future<void> fetchArtistAlbums(String artistName) async {
+    if (artistName.isEmpty || artistName == '<unknown>') return;
+
+    _isLoadingAlbums = true;
+    notifyListeners();
+
+    try {
+      _artistAlbums = await _artistService.getArtistAlbums(artistName);
+    } catch (_) {
+      _artistAlbums = [];
+    } finally {
+      _isLoadingAlbums = false;
+      notifyListeners();
+    }
+  }
+
+  /// Manually fetch artist info (for navigating to artist screen directly)
+  Future<void> fetchArtistInfoByName(String artistName) async {
+    if (artistName.isEmpty || artistName == '<unknown>') return;
+
+    _isLoadingArtist = true;
+    _isLoadingAlbums = true;
+    notifyListeners();
+
+    try {
+      final results = await Future.wait([
+        _artistService.getArtistInfo(artistName),
+        _artistService.getArtistAlbums(artistName),
+      ]);
+
+      _artistInfo = results[0] as ArtistInfo?;
+      _artistAlbums = results[1] as List<AlbumInfo>;
+    } catch (_) {
+      _artistInfo = null;
+      _artistAlbums = [];
+    } finally {
+      _isLoadingArtist = false;
+      _isLoadingAlbums = false;
       notifyListeners();
     }
   }
@@ -497,6 +592,25 @@ class PlayerViewModel extends ChangeNotifier {
         return 'All';
       case LoopMode.one:
         return 'One';
+    }
+  }
+
+  /// Mettre à jour l'index des paroles en fonction de la position actuelle
+  void _updateLyricsIndex() {
+    if (_syncedLyrics.isEmpty) return;
+
+    int newIndex = -1;
+    for (int i = 0; i < _syncedLyrics.length; i++) {
+      if (_position >= _syncedLyrics[i].time) {
+        newIndex = i;
+      } else {
+        break;
+      }
+    }
+
+    if (newIndex != _currentLyricsIndex) {
+      _currentLyricsIndex = newIndex;
+      // notifyListeners already called in position stream
     }
   }
 
