@@ -136,31 +136,86 @@ class _PlayerScreenState extends State<PlayerScreen> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        song.title,
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 24,
-                                          fontWeight: FontWeight.bold,
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      // Trigger search options
+                                      showModalBottomSheet(
+                                        context: context,
+                                        backgroundColor: const Color(0xFF2A2A2A),
+                                        shape: const RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
                                         ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        song.artist ?? "Artiste inconnu",
-                                        style: TextStyle(
-                                          color: Colors.grey[400],
-                                          fontSize: 18,
+                                        builder: (context) => Container(
+                                          padding: const EdgeInsets.all(16),
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              ListTile(
+                                                leading: const Icon(Icons.search, color: Colors.white),
+                                                title: const Text("Rechercher les paroles sur le web", style: TextStyle(color: Colors.white)),
+                                                onTap: () {
+                                                  Navigator.pop(context);
+                                                  // Trigger manual lyrics fetch or web search
+                                                   Navigator.push(
+                                                    context,
+                                                    MaterialPageRoute(builder: (context) => const FullLyricsScreen()),
+                                                  );
+                                                },
+                                              ),
+                                              ListTile(
+                                                leading: const Icon(Icons.info, color: Colors.white),
+                                                title: const Text("Rechercher infos artiste", style: TextStyle(color: Colors.white)),
+                                                onTap: () {
+                                                  Navigator.pop(context);
+                                                  Navigator.push(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                      builder: (context) => ArtistActuScreen(
+                                                        artistName: song.artist ?? "Artiste",
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
+                                              ),
+                                            ],
+                                          ),
                                         ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ],
+                                      );
+                                    },
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          song.title,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 24,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          song.artist ?? "Artiste inconnu",
+                                          style: TextStyle(
+                                            color: Colors.grey[400],
+                                            fontSize: 18,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(height: 4),
+                                        const Text(
+                                          "Tap for options",
+                                          style: TextStyle(
+                                            color: Colors.purple,
+                                            fontSize: 10,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                                 IconButton(

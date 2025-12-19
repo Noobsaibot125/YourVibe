@@ -195,9 +195,8 @@ class HomeScreen extends StatelessWidget {
   Widget _buildSpotifyRecommendationsList(BuildContext context) {
     return Consumer<PlayerViewModel>(
       builder: (context, viewModel, child) {
-        // Use Top Artists to generate Spotify links
-        // We need the top artists. Let's assume viewModel.madeForYou is based on top artists.
-        // We'll extract unique artists from madeForYou or just use songs.
+        // Logic: Suggest content based on Genre or Artist Similarity
+        // Instead of just linking to the specific song, we link to a search for "Genre" or "Artist Mix"
 
         final songs = viewModel.madeForYou.take(5).toList();
         if (songs.isEmpty) {
@@ -219,20 +218,17 @@ class HomeScreen extends StatelessWidget {
             itemBuilder: (context, index) {
               final song = songs[index];
               final artist = song.artist ?? "Music";
+
+              // We try to infer a "style" or "mood" if genre is missing (common in local files)
+              // For now, we search for "Artist Mix" or "Songs similar to Artist"
+              final String searchTerm = "$artist mix";
+
               return GestureDetector(
                 onTap: () async {
-                  String query = artist;
-                  if (query == "<unknown>" || query.isEmpty) {
-                    query = song.title; // Fallback to title
-                  } else {
-                    query = "$query ${song.title}";
-                  }
-
                   final Uri url = Uri.parse(
-                      "https://open.spotify.com/search/${Uri.encodeComponent(query)}");
+                      "https://open.spotify.com/search/${Uri.encodeComponent(searchTerm)}");
                   if (!await launchUrl(url,
                       mode: LaunchMode.externalApplication)) {
-                    // Fallback/Error
                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                         content: Text("Impossible d'ouvrir Spotify")));
                   }
@@ -254,11 +250,18 @@ class HomeScreen extends StatelessWidget {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(Icons.podcasts,
-                                color: Colors.white, size: 40),
+                             // Try to show artist artwork if possible, else Icon
+                             Expanded(
+                               child: QueryArtworkWidget(
+                                  id: song.id,
+                                  type: ArtworkType.AUDIO, // Use song art as proxy for "Style"
+                                  nullArtworkWidget: const Icon(Icons.podcasts,
+                                    color: Colors.white, size: 40),
+                               ),
+                             ),
                             const SizedBox(height: 8),
                             Text(
-                              "Similar to\n$artist",
+                              "Mix $artist",
                               textAlign: TextAlign.center,
                               style: const TextStyle(
                                   color: Colors.white,

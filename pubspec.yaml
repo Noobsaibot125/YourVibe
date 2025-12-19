@@ -15,6 +15,7 @@ dependencies:
 
   # Audio Core
   just_audio: ^0.9.40
+  just_audio_background: ^0.0.1-beta.11
   on_audio_query: 2.9.0 # Reverted to stable 2.9.0 with targeted Gradle fix
 
   # Permissions & System

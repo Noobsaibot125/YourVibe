@@ -238,47 +238,63 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   Widget _buildOverviewTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            "Recently Played Artists",
-            style: TextStyle(
-                color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 100,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: [
-                _buildArtistAvatar("Drake", Colors.blueGrey),
-                _buildArtistAvatar("Billie Eilish", Colors.amber),
-                _buildArtistAvatar("Rochloe", Colors.redAccent),
-                _buildArtistAvatar("Maelys", Colors.green),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          const Text(
-            "Top Genres",
-            style: TextStyle(
-                color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
+    return Consumer<PlayerViewModel>(
+      builder: (context, playerViewModel, child) {
+        // Dynamic stats
+        final recentArtists = playerViewModel.recentlyPlayed
+            .map((s) => s.artist)
+            .where((a) => a != null && a != "<unknown>")
+            .toSet()
+            .take(5)
+            .toList();
+
+        // Extract genres (simulate from artist or title if not available)
+        // Since local audio often lacks genre, we'll keep the mock or try to extract.
+        // For now, let's keep the mock genres but make the widget safe from overflow.
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 80),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildGenreChip("Genres", isSelected: true),
-              _buildGenreChip("Top-mush"),
-              _buildGenreChip("Music", isSelected: true),
-              _buildGenreChip("Lop mush"),
-              _buildGenreChip("Media"),
-            ],
-          ),
+              if (recentArtists.isNotEmpty) ...[
+                const Text(
+                  "Recently Played Artists",
+                  style: TextStyle(
+                      color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  height: 110, // Increased height to prevent overflow
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: recentArtists.length,
+                    itemBuilder: (context, index) {
+                       final artist = recentArtists.toList()[index]!;
+                       return _buildArtistAvatar(artist, Colors.accents[index % Colors.accents.length]);
+                    },
+                  ),
+                ),
+                const SizedBox(height: 24),
+              ],
+
+              const Text(
+                "Top Genres",
+                style: TextStyle(
+                    color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _buildGenreChip("Pop", isSelected: true),
+                  _buildGenreChip("Rap"),
+                  _buildGenreChip("R&B"),
+                  _buildGenreChip("Afrobeat"),
+                  _buildGenreChip("Local"),
+                ],
+              ),
           const SizedBox(height: 24),
           const Text(
             "My Playlists",
@@ -287,21 +303,23 @@ class _ProfileScreenState extends State<ProfileScreen>
           ),
           const SizedBox(height: 16),
           SizedBox(
-            height: 140,
+            height: 150, // Increased height to prevent overflow
             child: ListView(
               scrollDirection: Axis.horizontal,
               children: [
                 _buildPlaylistCard("Chill Vibes", "Chill Vibes", Colors.teal),
                 _buildPlaylistCard("Workout Mix", "Workout Mix", Colors.orange),
-                _buildPlaylistCard("Wno Drot", "Wno Drot", Colors.deepOrange),
-                _buildPlaylistCard("Bora Pla", "Mencap", Colors.blue),
+                _buildPlaylistCard("Soirée", "Party Mix", Colors.deepOrange),
+                _buildPlaylistCard("Route", "Drive", Colors.blue),
               ],
             ),
           ),
         ],
       ),
     );
-  }
+  },
+  );
+ }
 
   Widget _buildArtistAvatar(String name, Color color) {
     return Container(

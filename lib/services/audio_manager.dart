@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 import 'package:on_audio_query/on_audio_query.dart';
 import 'package:audio_session/audio_session.dart';
 
@@ -54,7 +55,7 @@ class AudioManager {
   }
 
   /// Charger une chanson depuis son URI
-  Future<void> loadSong(String uri) async {
+  Future<void> loadSong(String uri, {required String title, required String artist, String? artUri}) async {
     try {
       debugPrint('🎵 Loading song from URI: $uri');
 
@@ -70,8 +71,20 @@ class AudioManager {
 
       debugPrint('🎵 Parsed URI: $audioUri');
 
+      // Use AudioSource.uri with tag for background notification
       await _audioPlayer.setAudioSource(
-        AudioSource.uri(audioUri),
+        AudioSource.uri(
+          audioUri,
+          tag: MediaItem(
+            // Specify a unique ID for each media item:
+            id: uri,
+            // Metadata to display in the notification:
+            album: "FlutterVibe Music",
+            title: title,
+            artist: artist,
+            artUri: artUri != null ? Uri.parse(artUri) : null,
+          ),
+        ),
       );
 
       debugPrint('✅ Audio source set successfully');
