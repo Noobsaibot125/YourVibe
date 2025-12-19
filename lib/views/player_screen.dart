@@ -4,6 +4,7 @@ import 'package:on_audio_query/on_audio_query.dart';
 import '../viewmodels/player_viewmodel.dart';
 import 'artist_actu_screen.dart';
 import 'full_lyrics_screen.dart';
+import 'package:just_audio/just_audio.dart'; // <--- AJOUTE CECI
 
 class PlayerScreen extends StatefulWidget {
   const PlayerScreen({super.key});
