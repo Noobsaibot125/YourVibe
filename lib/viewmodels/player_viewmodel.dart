@@ -224,7 +224,11 @@ class PlayerViewModel extends ChangeNotifier {
         _currentIndex = _songs.indexOf(song);
 
         // Load metadata but DON'T play
-        await _audioManager.loadSong(song.uri ?? '');
+        await _audioManager.loadSong(
+          song.uri ?? '',
+          title: song.title,
+          artist: song.artist ?? "Unknown",
+        );
 
         // Fetch info for UI
         _fetchLyrics(song);
@@ -330,7 +334,12 @@ class PlayerViewModel extends ChangeNotifier {
       }
 
       // Charger et lire la chanson
-      await _audioManager.loadSong(song.uri ?? '');
+      await _audioManager.loadSong(
+        song.uri ?? '',
+        title: song.title,
+        artist: song.artist ?? "Unknown",
+        artUri: _artistInfo?.thumbUrl, // Try to pass remote art if available, though local art is tricky for notification
+      );
       await _audioManager.play();
 
       notifyListeners();
